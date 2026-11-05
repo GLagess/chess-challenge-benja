@@ -1,0 +1,25 @@
+__pycache__/
+*.pyc
+*.pyo
+
+# Partidas locais e cache de teste
+saves/
+config-duelo-a.toml
+config-duelo-b.toml
+.pytest_cache/
+
+# Binário do Stockfish (baixado por 1-instalar.bat; não é código da equipe)
+engines/*
+!engines/LEIA-ME.txt
+
+# Tablebases Syzygy (baixadas por 4-baixar-tablebases.bat)
+tablebases/*.rtb*
+tablebases/*.rtbz*
+
+# Fonte e pacote oficiais do Stockfish. Subir isso faz o repositório parecer cópia.
+sf/
+sf_tmp/
+*.zip
+
+# Cópia antiga aninhada, se reaparecer
+/chess-challenge-icev/

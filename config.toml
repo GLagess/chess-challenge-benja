@@ -1,0 +1,49 @@
+# Configuração do sistema da equipe — Chess Challenge III (iCEV 2026)
+# Caminhos relativos são a partir da pasta do projeto.
+
+saves_dir = "saves"
+
+[engine]
+path = "engines/stockfish.exe"          # Stockfish 19 para Windows (stockfish-windows-x86-64-universal)
+fallback_path = "engines/stockfish-reserva.exe"  # cópia ou versão anterior; usada se a principal falhar
+threads = 12                            # i7-13650HX, medido aqui: 6=4.4 / 8=5.5 / 10=6.1 / 12=6.3 Mnós/s. 12 deixa 8 núcleos para o Windows.
+hash_mb = 16384                         # 16 GB dos 40. Aloca em ~4 s na abertura. A 4060 não entra nessa conta: o Stockfish é só CPU.
+syzygy_path = "tablebases"              # tablebases de 3-4-5 peças (tools/download_syzygy.py)
+move_overhead_ms = 300
+high_priority = false                   # true rouba CPU da interface; deixe false
+ponder = true                           # pensar no tempo do adversário
+
+[clock]
+minutes = 25
+increment_s = 0
+# Meça no treino e ajuste. São os números que mais decidem partidas longas.
+entry_lag_s = 3.0      # do adversário mover a peça e apertar o relógio até registrarmos o lance
+exec_lag_s = 4.0       # do nosso lance aparecer até movermos a peça e apertarmos o relógio
+reserve_s = 60         # reserva intocável
+min_think_s = 0.5
+max_think_s = 25
+panic_s = 120          # abaixo disso: lances rápidos
+critical_s = 30        # abaixo disso: lances quase instantâneos
+moves_to_go_base = 75
+moves_to_go_slope = 0.5
+min_moves_to_go = 40
+
+[book]
+enabled = true
+path = "books/livro.json"   # gerado por tools/build_book.py
+polyglot_path = ""          # opcional: livro .bin
+max_ply = 30
+
+[strategy]
+adaptive = true             # false = sempre o melhor lance do motor, sem adaptação
+min_samples = 6
+blunder_threshold = 0.12
+weak_avg_loss = 0.045
+strong_avg_loss = 0.02
+strong_hit_rate = 0.45
+accept_draw_below = 0.35
+
+[server]
+host = "127.0.0.1"
+port = 8765
+open_browser = true

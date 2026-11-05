@@ -1,0 +1,6 @@
+Coloque aqui o Stockfish 19 para Windows, renomeado para stockfish.exe:
+https://github.com/official-stockfish/Stockfish/releases/tag/sf_19
+Arquivo: stockfish-windows-x86-64-universal.zip
+
+Recomendado: uma segunda cópia como stockfish-reserva.exe (binário reserva).
+Os binários não vão para o Git; o Stockfish é GPLv3 e o código-fonte está no link acima.

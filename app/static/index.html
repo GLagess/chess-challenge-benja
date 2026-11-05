@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chess Challenge III — mesa da equipe</title>
+<link rel="icon" href="data:,">
+<style>
+:root {
+  --paper: #f5f7f3;
+  --surface: #ffffff;
+  --ink: #17201c;
+  --muted: #5b6660;
+  --line: #d6ddd6;
+  --sq-light: #e9e5c8;
+  --sq-dark: #5f7f57;
+  --signal: #f4c430;
+  --signal-ink: #2a2200;
+  --opp: #9fc1e6;
+  --danger: #c2362b;
+  --ok: #2f7d4a;
+  --display: "Bahnschrift", "DIN Alternate", "Roboto Condensed", "Arial Narrow", sans-serif;
+  --body: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --glyph: "Segoe UI Symbol", "Noto Sans Symbols2", "DejaVu Sans", serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #121815;
+    --surface: #1b2420;
+    --ink: #e8eee9;
+    --muted: #9aa69f;
+    --line: #2d3a34;
+    --sq-light: #c9c4a3;
+    --sq-dark: #4e6b47;
+    --opp: #6f95bd;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font: 15px/1.45 var(--body);
+}
+button, input, select { font: inherit; color: inherit; }
+button {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+button:hover { border-color: var(--muted); }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--signal); outline-offset: 1px; }
+button.primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+button.warn { color: var(--danger); }
+
+.app {
+  display: grid;
+  grid-template-columns: minmax(320px, min(88vh, 56vw)) minmax(340px, 1fr);
+  gap: 20px;
+  padding: 16px 20px;
+  min-height: 100%;
+}
+@media (max-width: 900px) { .app { grid-template-columns: 1fr; } }
+
+/* ---------- tabuleiro ---------- */
+.board-col { display: flex; flex-direction: column; gap: 10px; }
+.board {
+  aspect-ratio: 1;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  border: 3px solid var(--ink);
+  user-select: none;
+  overflow: hidden;
+}
+.sq { position: relative; display: grid; place-items: center; cursor: pointer; min-width: 0; min-height: 0; overflow: hidden; }
+.board { touch-action: none; }
+.sq.lifted .pc { opacity: .3; }
+.sq.over::after { content: ""; position: absolute; inset: 0; box-shadow: inset 0 0 0 4px var(--ok); pointer-events: none; }
+.ghost { position: fixed; z-index: 50; pointer-events: none; transform: translate(-50%, -55%); }
+.sq.l { background: var(--sq-light); }
+.sq.d { background: var(--sq-dark); }
+.sq.ours::after, .sq.opp::after, .sq.sel::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+}
+.sq.ours::after { background: color-mix(in srgb, var(--signal) 70%, transparent); box-shadow: inset 0 0 0 4px var(--signal); }
+.sq.opp::after { background: color-mix(in srgb, var(--opp) 55%, transparent); }
+.sq.sel::after { box-shadow: inset 0 0 0 4px var(--ink); }
+.sq.target::before {
+  content: ""; position: absolute; width: 26%; height: 26%; border-radius: 50%;
+  background: color-mix(in srgb, var(--ink) 45%, transparent); z-index: 2; pointer-events: none;
+}
+.sq.check { box-shadow: inset 0 0 0 4px #d8402f, inset 0 0 26px #d8402f; }
+.pc {
+  font-family: var(--glyph);
+  font-size: min(8.4vh, 5.4vw);
+  line-height: 1;
+  z-index: 1;
+  pointer-events: none;
+}
+@media (max-width: 900px) { .pc { font-size: 10.5vw; } }
+.pc.w { color: #fbfbf7; -webkit-text-stroke: 1.2px #1a1a1a; }
+.pc.b { color: #1d1d1d; -webkit-text-stroke: 0.6px #000; }
+.coord { position: absolute; font: 600 11px var(--display); opacity: .75; pointer-events: none; }
+.coord.f { right: 3px; bottom: 1px; }
+.coord.r { left: 3px; top: 1px; }
+.sq.l .coord { color: var(--sq-dark); }
+.sq.d .coord { color: var(--sq-light); }
+
+.entry { display: flex; gap: 8px; }
+.entry input {
+  flex: 1;
+  font: 600 24px var(--display);
+  letter-spacing: .04em;
+  padding: 10px 14px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: var(--surface);
+}
+.entry input:disabled { border-color: var(--line); color: var(--muted); }
+.hint { color: var(--muted); font-size: 13px; }
+.toast { min-height: 1.4em; font: 600 20px var(--display); }
+.opp-last { color: var(--muted); }
+.preview { min-height: 1.4em; font: 600 17px var(--display); color: var(--muted); }
+.preview.ok { color: var(--ok); }
+.howto summary { font: 600 14px var(--body); color: var(--muted); }
+.howto table { border-collapse: collapse; margin-top: 6px; font-size: 14px; }
+.howto td { padding: 2px 12px 2px 0; vertical-align: top; }
+.howto code { font: 600 14px ui-monospace, Consolas, monospace; }
+.opp-last strong { color: var(--ink); font: 600 18px var(--display); }
+#b-pred { text-align: left; font: 600 17px var(--display); border: 2px dashed var(--opp); }
+.toast.err { color: var(--danger); }
+.toast.ok { color: var(--ok); }
+
+/* ---------- coluna de controle ---------- */
+.side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+.status { font: 600 18px var(--display); display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.status .sub { font: 14px var(--body); color: var(--muted); }
+
+.play {
+  background: var(--signal);
+  color: var(--signal-ink);
+  border-radius: 10px;
+  padding: 14px 20px 16px;
+}
+.play.idle { background: var(--surface); color: var(--ink); border: 1px dashed var(--line); }
+.play .verb { font: 600 18px var(--display); }
+.play .san { font: 700 clamp(64px, 9vw, 112px)/0.95 var(--display); letter-spacing: -.01em; }
+.play.long .san { font-size: clamp(32px, 4vw, 48px); line-height: 1.15; }
+.play .text { font: 700 clamp(24px, 2.6vw, 34px)/1.15 var(--display); margin-top: 8px; }
+.play ul { margin: 6px 0 0; padding-left: 20px; font-weight: 600; }
+.play .why { margin-top: 6px; font-size: 13px; opacity: .8; }
+.progress { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin-top: 10px; }
+.progress > div { height: 100%; background: var(--ink); width: 0; transition: width .2s linear; }
+
+.clocks { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.clock { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; }
+.clock .who { color: var(--muted); font-size: 13px; }
+.clock .t { font: 600 42px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.clock.run { border-color: var(--ink); box-shadow: inset 4px 0 0 var(--ink); }
+.clock.low .t { color: var(--danger); }
+
+.warn-box { background: color-mix(in srgb, var(--danger) 14%, var(--surface)); border-left: 4px solid var(--danger); padding: 8px 12px; border-radius: 4px; font-weight: 600; }
+.decision { background: var(--ink); color: var(--paper); padding: 10px 14px; border-radius: 6px; font-weight: 600; }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 1250px) { .grid2 { grid-template-columns: 1fr; } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+.panel h2 { margin: 0 0 8px; font: 600 16px var(--display); }
+dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; margin: 0; }
+dt { color: var(--muted); }
+dd { margin: 0; font-variant-numeric: tabular-nums; }
+.profile { font: 700 26px var(--display); }
+
+.sheet { display: grid; grid-template-columns: 2.4em 1fr 1fr; gap: 1px 8px; max-height: 210px; overflow-y: auto; font-variant-numeric: tabular-nums; }
+.sheet .n { color: var(--muted); text-align: right; }
+.sheet .cur { background: color-mix(in srgb, var(--signal) 45%, transparent); }
+
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.sync { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.sync input { width: 6.5em; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); font-variant-numeric: tabular-nums; }
+.log { font: 12px/1.5 ui-monospace, Consolas, monospace; color: var(--muted); max-height: 150px; overflow-y: auto; white-space: pre-wrap; }
+details summary { cursor: pointer; font: 600 15px var(--display); }
+
+/* ---------- configuração inicial ---------- */
+dialog { border: none; border-radius: 12px; padding: 24px; max-width: 520px; width: 92vw; background: var(--surface); color: var(--ink); }
+dialog::backdrop { background: rgba(10, 16, 13, .55); }
+dialog h1 { font: 700 30px var(--display); margin: 0 0 4px; }
+dialog p { margin: 0 0 16px; color: var(--muted); }
+.colors { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.colors button { padding: 18px; font: 600 20px var(--display); display: flex; gap: 10px; align-items: center; justify-content: center; }
+.colors button[aria-pressed="true"] { outline: 3px solid var(--ink); }
+.colors .pc { font-size: 40px; }
+.row { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
+.row label { min-width: 9em; }
+.row input { flex: 1; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); }
+.promo { display: flex; gap: 6px; }
+.promo button .pc { font-size: 36px; }
+@media (prefers-reduced-motion: reduce) { .progress > div { transition: none; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <section class="board-col" aria-label="Tabuleiro">
+    <div id="board" class="board"></div>
+    <div class="entry">
+      <input id="mv" autocomplete="off" spellcheck="false" placeholder="Escreva o que eles moveram, ex.: cavalo de g8 para f6" aria-label="Lance do adversário">
+      <button id="send" class="primary">Registrar</button>
+    </div>
+    <div id="preview" class="preview" aria-live="polite"></div>
+    <button id="b-pred" hidden></button>
+    <div id="promo" class="promo" hidden></div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <div class="opp-last" id="opp-last"></div>
+    <details class="howto" open>
+      <summary>Como anotar o lance deles</summary>
+      <div class="hint">O jeito mais fácil: arraste na tela a mesma peça que eles moveram no tabuleiro. A linha verde confirma o que vai ser registrado.</div>
+      <table>
+        <tr><td>Escrevendo</td><td><code>cavalo de g8 para f6</code> <code>peão captura em d5</code> <code>roque pequeno</code></td></tr>
+        <tr><td>Na tela</td><td>arraste a peça até a casa, ou clique na peça e depois na casa</td></tr>
+      </table>
+    </details>
+  </section>
+
+  <section class="side">
+    <div class="status"><span id="status">Conectando…</span><span id="engine" class="sub"></span></div>
+
+    <div id="play" class="play idle" aria-live="assertive">
+      <div class="verb" id="verb">Nenhum lance ainda</div>
+      <div class="san" id="san">—</div>
+      <div class="text" id="mtext"></div>
+      <ul id="notes"></ul>
+      <div class="why" id="why"></div>
+      <div class="progress" id="progress" hidden><div id="bar"></div></div>
+    </div>
+
+    <div id="warnings"></div>
+    <div id="decision" class="decision" hidden></div>
+
+    <div class="clocks">
+      <div class="clock" id="c-ours"><div class="who">Nosso relógio (estimado)</div><div class="t" id="t-ours">25:00</div></div>
+      <div class="clock" id="c-theirs"><div class="who">Adversário (estimado)</div><div class="t" id="t-theirs">25:00</div></div>
+    </div>
+
+    <div class="actions">
+      <button id="b-now">Jogar agora</button>
+      <button id="b-undo" class="warn">Corrigir lance do adversário</button>
+      <button id="b-draw">Adversário ofereceu empate</button>
+      <span class="sync">
+        <input id="s-ours" placeholder="nosso mm:ss" aria-label="Nosso relógio">
+        <input id="s-theirs" placeholder="dele mm:ss" aria-label="Relógio do adversário">
+        <button id="b-sync">Sincronizar</button>
+      </span>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <h2>Adversário</h2>
+        <div class="profile" id="profile">Analisando…</div>
+        <dl id="opp"></dl>
+      </div>
+      <div class="panel">
+        <h2>Motor</h2>
+        <dl id="eng"></dl>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Lances da partida</h2>
+      <div class="sheet" id="sheet"></div>
+    </div>
+
+    <details>
+      <summary>Partida e registro</summary>
+      <div class="actions" style="margin-top:10px">
+        <button id="b-new">Nova partida</button>
+        <button id="b-win">Registrar vitória</button>
+        <button id="b-loss">Registrar derrota</button>
+        <button id="b-tie">Registrar empate</button>
+        <label><input type="checkbox" id="tts"> Falar nosso lance em voz alta</label>
+      </div>
+      <div class="log" id="log" style="margin-top:10px"></div>
+    </details>
+  </section>
+</div>
+
+<dialog id="setup">
+  <h1>Nova partida</h1>
+  <p>Escolha a nossa cor. Clique em Começar quando o relógio da mesa começar a contar.</p>
+  <div class="colors">
+    <button id="col-w" aria-pressed="true"><span class="pc w">♚&#xFE0E;</span>Brancas</button>
+    <button id="col-b" aria-pressed="false"><span class="pc b">♚&#xFE0E;</span>Pretas</button>
+  </div>
+  <div class="row"><label for="minutes">Minutos por jogador</label><input id="minutes" type="number" min="1" step="1" value="25"></div>
+  <div class="row"><label for="fen">Posição inicial (FEN)</label><input id="fen" placeholder="opcional — só para retomar uma posição"></div>
+  <div class="actions">
+    <button id="b-start" class="primary">Começar</button>
+    <button id="b-resume" hidden>Retomar partida salva</button>
+    <button id="b-cancel">Fechar</button>
+  </div>
+  <p id="resume-info" style="margin-top:10px"></p>
+</dialog>
+
+<script>
+"use strict";
+const GLYPH = { k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟" };
+const FILES = "abcdefgh";
+const $ = (id) => document.getElementById(id);
+const S = { st: null, orient: null, sel: null, lastSpokenPly: -1, color: "white", promoFor: null };
+
+async function api(path, body) {
+  try {
+    const res = await fetch("/api/" + path, body === undefined ? {} : {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+    });
+    return await res.json();
+  } catch (e) {
+    return { ok: false, msg: "Sem conexão com o sistema. Confira se o run.py está aberto." };
+  }
+}
+
+function toast(msg, ok) {
+  const t = $("toast");
+  t.textContent = msg || "";
+  t.className = "toast " + (ok ? "ok" : "err");
+}
+
+function pieceAt(fen) {
+  const map = {};
+  const rows = fen.split(" ")[0].split("/");
+  rows.forEach((row, i) => {
+    let f = 0;
+    for (const ch of row) {
+      if (/\d/.test(ch)) { f += +ch; continue; }
+      map[FILES[f] + (8 - i)] = ch;
+      f++;
+    }
+  });
+  return map;
+}
+
+function buildBoard(orient) {
+  const b = $("board");
+  b.innerHTML = "";
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const file = orient === "white" ? c : 7 - c;
+      const rank = orient === "white" ? 7 - r : r;
+      const name = FILES[file] + (rank + 1);
+      const d = document.createElement("div");
+      d.className = "sq " + ((file + rank) % 2 ? "l" : "d");
+      d.dataset.sq = name;
+      d.innerHTML = '<span class="pc"></span>';
+      if (r === 7) d.insertAdjacentHTML("beforeend", `<span class="coord f">${FILES[file]}</span>`);
+      if (c === 0) d.insertAdjacentHTML("beforeend", `<span class="coord r">${rank + 1}</span>`);
+      b.appendChild(d);
+    }
+  }
+  S.orient = orient;
+}
+
+function renderBoard(st) {
+  if (S.orient !== st.our_color) buildBoard(st.our_color);
+  const pcs = pieceAt(st.fen);
+  const recentOurs = st.turn === "theirs" && st.last_move;
+  const targets = S.sel ? st.legal.filter((u) => u.startsWith(S.sel)).map((u) => u.slice(2, 4)) : [];
+  const kingSq = st.in_check ? Object.keys(pcs).find((k) => pcs[k] === (st.fen.split(" ")[1] === "w" ? "K" : "k")) : null;
+  for (const el of $("board").children) {
+    const sq = el.dataset.sq;
+    const p = pcs[sq];
+    const span = el.firstChild;
+    span.textContent = p ? GLYPH[p.toLowerCase()] + "\uFE0E" : "";
+    span.className = "pc " + (p ? (p === p.toUpperCase() ? "w" : "b") : "");
+    el.classList.toggle("ours", !!(recentOurs && (sq === st.last_move.from || sq === st.last_move.to)));
+    el.classList.toggle("opp", !!(!recentOurs && st.last_opp && (sq === st.last_opp.from || sq === st.last_opp.to)));
+    el.classList.toggle("sel", sq === S.sel);
+    el.classList.toggle("target", targets.includes(sq));
+    el.classList.toggle("check", sq === kingSq);
+  }
+}
+
+function squareAt(x, y) {
+  const el = document.elementFromPoint(x, y);
+  const sq = el && el.closest ? el.closest("#board .sq") : null;
+  return sq ? sq.dataset.sq : null;
+}
+
+async function tryMove(from, to) {
+  const st = S.st;
+  const cands = st.legal.filter((u) => u.startsWith(from + to));
+  S.sel = null;
+  if (cands.length === 1) { submit(cands[0]); return; }
+  if (cands.length > 1) { askPromotion(from + to); return; }
+  renderBoard(st);
+  const r = await api("preview", { move: from + to });
+  toast(r.msg || "Lance ilegal.", false);
+}
+
+function clickSquare(sq) {
+  const st = S.st;
+  if (!st || st.phase !== "aguardando" || !sq) return;
+  if (S.sel && S.sel !== sq) {
+    const isMove = st.legal.some((u) => u.startsWith(S.sel + sq));
+    const otherPiece = st.legal.some((u) => u.startsWith(sq));
+    if (isMove || !otherPiece) { tryMove(S.sel, sq); return; }
+  }
+  S.sel = st.legal.some((u) => u.startsWith(sq)) && S.sel !== sq ? sq : null;
+  renderBoard(st);
+}
+
+// arrastar (mouse, caneta ou toque) e clicar usam os mesmos eventos
+const D = { down: null, ghost: null, x: 0, y: 0, over: null };
+$("board").addEventListener("pointerdown", (e) => {
+  const st = S.st;
+  if (!st || st.phase !== "aguardando" || e.button > 0) return;
+  const sq = squareAt(e.clientX, e.clientY);
+  if (!sq) return;
+  e.preventDefault();
+  D.down = sq; D.x = e.clientX; D.y = e.clientY; D.ghost = null;
+});
+window.addEventListener("pointermove", (e) => {
+  if (!D.down) return;
+  const st = S.st;
+  if (!D.ghost) {
+    if (Math.hypot(e.clientX - D.x, e.clientY - D.y) < 6) return;
+    if (!st.legal.some((u) => u.startsWith(D.down))) { D.down = null; return; }
+    const from = document.querySelector(`#board .sq[data-sq="${D.down}"]`);
+    const pc = from.querySelector(".pc");
+    D.ghost = pc.cloneNode(true);
+    D.ghost.classList.add("ghost");
+    D.ghost.style.fontSize = getComputedStyle(pc).fontSize;
+    document.body.appendChild(D.ghost);
+    from.classList.add("lifted");
+    S.sel = D.down;
+    renderBoard(st);
+  }
+  D.ghost.style.left = e.clientX + "px";
+  D.ghost.style.top = e.clientY + "px";
+  const over = squareAt(e.clientX, e.clientY);
+  if (over !== D.over) {
+    document.querySelectorAll("#board .sq.over").forEach((el) => el.classList.remove("over"));
+    if (over && st.legal.some((u) => u.startsWith(D.down + over))) {
+      document.querySelector(`#board .sq[data-sq="${over}"]`).classList.add("over");
+    }
+    D.over = over;
+  }
+});
+window.addEventListener("pointerup", (e) => {
+  if (!D.down) return;
+  const from = D.down, dragged = !!D.ghost;
+  const to = squareAt(e.clientX, e.clientY);
+  D.down = null; D.over = null;
+  if (D.ghost) { D.ghost.remove(); D.ghost = null; }
+  document.querySelectorAll("#board .sq.lifted, #board .sq.over").forEach((el) => el.classList.remove("lifted", "over"));
+  if (dragged) {
+    if (to && to !== from) tryMove(from, to);
+    else { S.sel = null; renderBoard(S.st); }
+  } else {
+    clickSquare(to);
+  }
+});
+window.addEventListener("pointercancel", () => {
+  if (D.ghost) D.ghost.remove();
+  D.down = null; D.ghost = null;
+  document.querySelectorAll("#board .sq.lifted, #board .sq.over").forEach((el) => el.classList.remove("lifted", "over"));
+});
+
+function askPromotion(base) {
+  const box = $("promo");
+  const theirColor = S.st.our_color === "white" ? "b" : "w";
+  box.innerHTML = "";
+  [["d", "q", "Dama"], ["t", "r", "Torre"], ["b", "b", "Bispo"], ["c", "n", "Cavalo"]].forEach(([pt, en, label]) => {
+    const btn = document.createElement("button");
+    btn.innerHTML = `<span class="pc ${theirColor}">${GLYPH[en]}&#xFE0E;</span> ${label}`;
+    btn.onclick = () => { box.hidden = true; S.sel = null; submit(base + pt); };
+    box.appendChild(btn);
+  });
+  box.hidden = false;
+}
+
+async function submit(text) {
+  text = (text ?? $("mv").value).trim();
+  if (!text) return;
+  const r = await api("opponent_move", { move: text });
+  toast(r.msg, r.ok);
+  if (r.ok) { $("mv").value = ""; S.sel = null; showPreview(""); }
+  if (r.state) render(r.state);
+}
+
+let previewTimer = null;
+function showPreview(msg, ok) {
+  const p = $("preview");
+  p.textContent = msg || "";
+  p.className = "preview" + (ok ? " ok" : "");
+}
+$("mv").addEventListener("input", () => {
+  clearTimeout(previewTimer);
+  const text = $("mv").value.trim();
+  if (!text) { showPreview(""); return; }
+  previewTimer = setTimeout(async () => {
+    const r = await api("preview", { move: text });
+    if ($("mv").value.trim() === text) showPreview(r.msg, r.ok);
+  }, 150);
+});
+
+function fmtNps(n) { return n ? (n / 1e6).toFixed(1) + " milhões/s" : "—"; }
+const PROFILE = { desconhecido: "Ainda observando", forte: "Joga bem", medio: "Jogo médio", fraco: "Erra bastante" };
+const MODE = {
+  solido: "Jogo normal", antiempate: "Evitar empate", pressao: "Apertar o tempo deles",
+  conversao: "Estamos ganhando", complicar: "Complicar o jogo", salvar: "Cuidar do nosso tempo",
+};
+const REASON = {
+  "repetição quíntupla": "A mesma posição apareceu 5 vezes. A regra encerra em empate. Não mova mais nada e não precisa falar com o árbitro.",
+  "xeque-mate": "O rei não tem para onde fugir. A partida acabou.",
+  "afogamento": "Não há peça que possa mover, e o rei não está ameaçado. Isso é empate.",
+  "material insuficiente": "Sobram poucas peças para alguém ganhar. Empate.",
+  "regra dos 75 lances": "Passaram lances demais sem captura. Empate automático.",
+};
+function outcomeTitle(st) {
+  if (st.result === "1/2-1/2") return "Empate";
+  const weWin = (st.result === "1-0" && st.our_color === "white") || (st.result === "0-1" && st.our_color === "black");
+  if (st.result === "1-0" || st.result === "0-1") return weWin ? "Ganhamos" : "Perdemos";
+  return "Partida acabou";
+}
+function outcomeDetail(st) {
+  return REASON[st.result_reason] || (st.result_reason ? "Motivo: " + st.result_reason + ". Não mova mais peças." : "Não mova mais peças.");
+}
+
+function render(st) {
+  S.st = st;
+  renderBoard(st);
+
+  // status
+  const phaseText = {
+    setup: "Nenhuma partida em andamento",
+    pensando: "Pensando no nosso lance",
+    aguardando: "Vez do adversário: registre o lance dele",
+    fim: "Partida encerrada",
+  }[st.phase];
+  $("status").textContent = phaseText;
+  $("engine").textContent = st.engine.name ? `${st.engine.name}${st.engine.status === "ok" ? "" : " (" + st.engine.status + ")"}` : "motor parado";
+
+  // painel do lance
+  const play = $("play");
+  const lm = st.last_move;
+  const showOurs = st.phase === "aguardando" && lm;
+  play.classList.toggle("idle", !showOurs && st.phase !== "fim");
+  play.classList.toggle("long", showOurs);
+  $("progress").hidden = st.phase !== "pensando";
+  if (st.phase === "pensando") {
+    $("verb").textContent = "Espere";
+    $("san").textContent = "Não mexa nada";
+    $("mtext").textContent = "O computador está escolhendo a peça. A faixa fica amarela quando for a hora de mover.";
+    $("notes").innerHTML = "";
+    $("why").textContent = "";
+    $("bar").style.width = Math.min(100, 100 * (st.thinking.elapsed || 0) / Math.max(0.1, st.thinking.budget || 1)) + "%";
+  } else if (showOurs) {
+    $("verb").textContent = "Sua vez";
+    $("san").textContent = lm.say;
+    $("mtext").textContent = "Mova essa peça no tabuleiro. Quando ela estiver na casa, aperte o nosso relógio.";
+    $("notes").innerHTML = lm.notes.map((n) => `<li>${n}</li>`).join("");
+    $("why").textContent = "";
+    if (S.lastSpokenPly !== lm.ply) {
+      S.lastSpokenPly = lm.ply;
+      speak(lm.say);
+    }
+  } else if (st.phase === "fim") {
+    $("verb").textContent = "Acabou";
+    $("san").textContent = outcomeTitle(st);
+    $("mtext").textContent = outcomeDetail(st);
+    $("notes").innerHTML = "";
+    $("why").textContent = "";
+  } else {
+    $("verb").textContent = "Nenhum lance ainda";
+    $("san").textContent = "—";
+    $("mtext").textContent = "";
+    $("notes").innerHTML = "";
+    $("why").textContent = "";
+  }
+
+  // avisos e decisões
+  $("warnings").innerHTML = st.warnings.map((w) => `<div class="warn-box">${w}</div>`).join("");
+  if (st.phase !== "fim" && st.draw_claim) {
+    $("decision").hidden = false; $("decision").textContent = st.draw_claim; S.claimShown = true;
+  } else if (S.claimShown || st.phase === "fim") {
+    $("decision").hidden = true; S.claimShown = false;
+  }
+
+  // relógios
+  const co = $("c-ours"), ct = $("c-theirs");
+  $("t-ours").textContent = st.clock.ours_text;
+  $("t-theirs").textContent = st.clock.theirs_text;
+  co.classList.toggle("run", st.clock.running === "ours");
+  ct.classList.toggle("run", st.clock.running === "theirs");
+  co.classList.toggle("low", st.clock.ours < 120);
+  ct.classList.toggle("low", st.clock.theirs < 120);
+
+  // lance previsto e último lance do adversário
+  const pred = $("b-pred");
+  if (st.phase === "aguardando" && st.predicted) {
+    pred.hidden = false;
+    pred.textContent = `Eles jogaram o que esperávamos: ${st.predicted.say}. Clique para registrar.`;
+    pred.dataset.uci = st.predicted.uci;
+  } else {
+    pred.hidden = true;
+  }
+  $("opp-last").innerHTML = st.last_opp ? `Último lance do adversário: <strong>${st.last_opp.say}</strong>` : "";
+
+  // entrada
+  const waiting = st.phase === "aguardando";
+  $("mv").disabled = !waiting;
+  $("send").disabled = !waiting;
+  if (!waiting) {
+    if (st.phase === "fim") {
+      $("mv").value = "";
+      showPreview("Partida acabou. Não digite mais lance.", true);
+    } else if ($("preview").textContent.startsWith("Não há") || $("preview").textContent.startsWith("Partida acabou")) {
+      showPreview("");
+    }
+  }
+  if (waiting && document.activeElement !== $("mv") && !document.querySelector("dialog[open]")
+      && !["s-ours", "s-theirs"].includes(document.activeElement?.id)) $("mv").focus();
+
+  // adversário
+  const o = st.opponent;
+  $("profile").textContent = PROFILE[o.profile] || o.profile;
+  $("opp").innerHTML = `
+    <dt>Precisão estimada</dt><dd>${o.samples ? o.accuracy + "%" : "—"} <span class="hint">(${o.samples} lances)</span></dd>
+    <dt>Jogou o lance previsto</dt><dd>${o.predictions ? o.hit_rate + "%" : "—"}</dd>
+    <dt>Erros graves</dt><dd>${o.blunders}</dd>
+    <dt>Tempo médio</dt><dd>${o.avg_seconds ? o.avg_seconds + " s" : "—"}</dd>
+    <dt>Nosso plano</dt><dd>${st.plan ? (MODE[st.plan.mode] || st.plan.label) : "—"}</dd>`;
+
+  // motor
+  const pd = st.ponder;
+  $("eng").innerHTML = `
+    <dt>Chance de ganhar</dt><dd>${st.eval.expectation != null ? Math.round(st.eval.expectation * 100) + "%" : "—"}</dd>
+    <dt>Pensando no tempo deles</dt><dd>${pd.active ? "sim" : "não"}</dd>
+    <dt>Velocidade</dt><dd>${fmtNps(st.thinking.nps || pd.nps)}</dd>
+    <dt>Falhas do programa</dt><dd>${st.engine.restarts}</dd>`;
+
+  // súmula
+  const sheet = $("sheet");
+  let html = "";
+  const moves = st.moves.slice();
+  let n = st.start_fullmove;
+  if (st.start_black) moves.unshift("…");
+  for (let i = 0; i < moves.length; i += 2) {
+    const cur1 = i === moves.length - 1 ? " cur" : "", cur2 = i + 1 === moves.length - 1 ? " cur" : "";
+    html += `<span class="n">${n++}.</span><span class="${cur1}">${moves[i]}</span><span class="${cur2}">${moves[i + 1] || ""}</span>`;
+  }
+  if (sheet.dataset.len !== String(moves.length)) {
+    sheet.innerHTML = html;
+    sheet.scrollTop = sheet.scrollHeight;
+    sheet.dataset.len = String(moves.length);
+  }
+
+  $("log").textContent = st.events.join("\n");
+
+  if (st.phase === "setup" && !$("setup").open) openSetup();
+}
+
+function openSetup() {
+  const st = S.st;
+  $("minutes").value = st ? st.default_minutes : 25;
+  $("b-resume").hidden = !(st && st.resume_available);
+  $("resume-info").textContent = st && st.resume_available ? "Há uma partida salva: " + st.resume_info + "." : "";
+  $("setup").showModal();
+}
+
+function setColor(c) {
+  S.color = c;
+  $("col-w").setAttribute("aria-pressed", c === "white");
+  $("col-b").setAttribute("aria-pressed", c === "black");
+}
+
+function speak(text) {
+  if (!$("tts").checked || !("speechSynthesis" in window)) return;
+  const u = new SpeechSynthesisUtterance(text);
+  const voices = speechSynthesis.getVoices().filter((v) => v.lang.startsWith("pt"));
+  u.voice = voices.find((v) => v.localService) || voices[0] || null;
+  u.lang = "pt-BR";
+  u.rate = 1.15;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+}
+
+async function finish(kind) {
+  const ours = S.st.our_color === "white";
+  const result = kind === "tie" ? "1/2-1/2" : (kind === "win") === ours ? "1-0" : "0-1";
+  const label = { win: "vitória", loss: "derrota", tie: "empate" }[kind];
+  const reason = prompt(`Motivo da ${label} (ex.: tempo, abandono, árbitro):`, "");
+  if (reason === null) return;
+  const r = await api("finish", { result, reason });
+  toast(r.msg, r.ok);
+  if (r.state) render(r.state);
+}
+
+// ---------- eventos ----------
+$("send").onclick = () => submit();
+$("b-pred").onclick = () => submit($("b-pred").dataset.uci);
+$("mv").addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") { S.sel = null; $("mv").value = ""; } });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") { S.sel = null; $("promo").hidden = true; S.st && renderBoard(S.st); } });
+$("b-now").onclick = async () => { const r = await api("play_now", {}); toast(r.msg, r.ok); };
+$("b-undo").onclick = async () => {
+  if (!confirm("Voltar para antes do último lance do adversário? O nosso lance seguinte também será desfeito.")) return;
+  const r = await api("undo", {}); toast(r.msg, r.ok); if (r.state) render(r.state);
+};
+$("b-draw").onclick = async () => {
+  const r = await api("draw_offer", {});
+  $("decision").hidden = false; $("decision").textContent = r.msg;
+};
+$("b-sync").onclick = async () => {
+  const r = await api("sync_clock", { ours: $("s-ours").value, theirs: $("s-theirs").value });
+  toast(r.msg, r.ok);
+  if (r.ok) { $("s-ours").value = ""; $("s-theirs").value = ""; }
+};
+$("b-new").onclick = openSetup;
+$("b-win").onclick = () => finish("win");
+$("b-loss").onclick = () => finish("loss");
+$("b-tie").onclick = () => finish("tie");
+$("col-w").onclick = () => setColor("white");
+$("col-b").onclick = () => setColor("black");
+$("b-cancel").onclick = () => $("setup").close();
+$("b-start").onclick = async () => {
+  const r = await api("new_game", { color: S.color, minutes: $("minutes").value, fen: $("fen").value });
+  toast(r.msg, r.ok);
+  if (r.ok) { $("setup").close(); $("decision").hidden = true; S.lastSpokenPly = -1; }
+  if (r.state) render(r.state);
+};
+$("b-resume").onclick = async () => {
+  const r = await api("resume", {});
+  toast(r.msg, r.ok);
+  if (r.ok) $("setup").close();
+  if (r.state) render(r.state);
+};
+
+async function poll() {
+  const st = await api("state");
+  if (st && st.phase) render(st);
+  else toast(st.msg, false);
+  setTimeout(poll, 250);
+}
+poll();
+</script>
+</body>
+</html>
