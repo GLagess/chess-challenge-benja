@@ -14,7 +14,7 @@ Este guia leva vocês da instalação até o dia do torneio. Leiam inteiro uma v
 
 ## 1. Como funciona o torneio e o nosso sistema
 
-As equipes sentam frente a frente, com o tabuleiro entre elas. Cada equipe **anuncia o próprio lance em voz alta**. O árbitro escuta e move as peças. Cada lado tem 25 minutos, sem acréscimo. Quem estoura o tempo perde. Software que trava também perde.
+As equipes sentam frente a frente, com o tabuleiro entre elas. Cada equipe **anuncia o próprio lance em voz alta e move as peças**. Cada lado tem 25 minutos, sem acréscimo. Quem estoura o tempo perde. Software que trava também perde.
 
 O nosso sistema roda no notebook, sem internet. Ele usa o Stockfish 19, o motor de xadrez mais forte que existe, e acrescenta uma camada que fizemos:
 
@@ -37,21 +37,7 @@ O nosso sistema roda no notebook, sem internet. Ele usa o Stockfish 19, o motor 
 2. **Uns 2 GB livres em disco**, contando as tablebases.
 3. **Internet**, só para a instalação.
 
-### 2.2 Instalação automática (recomendada)
-
-1. **Extraia o zip.** Clique com o botão direito em **Extrair tudo**.
-2. **Abra a pasta extraída.** Ela tem que mostrar `run.py`, `config.toml` e os arquivos `.bat`.
-3. **Dê dois cliques em `1-instalar.bat`.** Ele faz três coisas:
-   - instala a biblioteca de xadrez;
-   - baixa o Stockfish 19 para a pasta `engines`;
-   - roda a verificação.
-4. **Se o Windows mostrar "O Windows protegeu o computador",** clique em **Mais informações** e depois em **Executar assim mesmo**.
-5. **Leia o resultado da verificação no fim:**
-   - não pode aparecer **FALHA**;
-   - avisos de tablebases, livro e internet são normais nesse momento.
-6. **Dê dois cliques em `4-baixar-tablebases.bat`.** Ele baixa cerca de 1 GB. Esses arquivos fazem os finais de partida saírem perfeitos.
-
-### 2.3 Instalação manual (se o .bat falhar)
+### 2.2 Instalação
 
 Abra o PowerShell **na pasta que tem o `run.py`**. Para isso, clique na barra de endereço do Explorer, digite `powershell` e aperte Enter. Depois rode **um comando de cada vez**:
 
@@ -79,26 +65,33 @@ Copy-Item engines\stockfish.exe engines\stockfish-reserva.exe
 python tools\check_setup.py
 ```
 
-### 2.4 Abrindo o sistema
+A verificação não pode mostrar **FALHA**. Avisos de tablebases, livro e internet são normais nesse momento. Os finais perfeitos, cerca de 1 GB, são opcionais:
 
-Dê dois cliques em **`2-iniciar.bat`**. O navegador abre em <http://127.0.0.1:8765>. Se não abrir, digite esse endereço no navegador.
+```
+python tools\download_syzygy.py
+```
 
-A janela preta precisa ficar aberta: fechar ela fecha o sistema.
+### 2.3 Abrindo o sistema
 
-### 2.5 Atalhos e comandos equivalentes
+```
+python run.py
+```
 
-Todo atalho `.bat` tem um comando equivalente. Os comandos rodam no PowerShell aberto na pasta do `run.py`.
+O navegador abre em <http://127.0.0.1:8765>. Se não abrir, digite esse endereço. A janela preta precisa ficar aberta: fechar ela fecha o sistema.
 
-| Atalho (dois cliques) | Comando no PowerShell | Para que serve |
-|---|---|---|
-| `1-instalar.bat` | ver seção 2.3 | Instala tudo. |
-| `2-iniciar.bat` | `python run.py` | Abre o sistema. |
-| `3-verificar.bat` | `python tools\check_setup.py` | Checagem antes de cada rodada. |
-| `4-baixar-tablebases.bat` | `python tools\download_syzygy.py` | Baixa os finais perfeitos (1 GB). |
-| `5-gerar-livro.bat` | `python tools\build_book.py --plies 12 --our-time 30 --their-time 8 --branch 3` | Gera o livro de aberturas (horas). |
-| `6-diagnostico.bat` | `python tools\diagnostico.py` | Mede o notebook e sugere a configuração. |
-| — | `python tools\diagnostico.py --aplicar` | Mede e já grava a sugestão no `config.toml`. |
-| — | `python -m pytest -q` | Roda os testes automatizados. |
+### 2.4 Comandos
+
+Todos rodam no PowerShell aberto na pasta do `run.py`.
+
+| Comando | Para que serve |
+|---|---|
+| `python run.py` | Abre o sistema. |
+| `python tools\check_setup.py` | Checagem antes de cada rodada. |
+| `python tools\download_syzygy.py` | Baixa os finais perfeitos (1 GB). |
+| `python tools\build_book.py --plies 12 --our-time 30 --their-time 8 --branch 3` | Gera o livro de aberturas (horas). |
+| `python tools\diagnostico.py` | Mede o notebook e sugere a configuração. |
+| `python tools\diagnostico.py --aplicar` | Mede e já grava a sugestão no `config.toml`. |
+| `python -m pytest -q` | Roda os testes automatizados. |
 
 ---
 
@@ -111,8 +104,6 @@ Cada notebook tem processador, memória e refrigeração diferentes. A configura
 - com todos os outros programas fechados.
 
 ### 3.1 Rodar o diagnóstico
-
-Dê dois cliques em `6-diagnostico.bat`, ou rode:
 
 ```
 python tools\diagnostico.py
@@ -160,7 +151,7 @@ Para gravar a sugestão no `config.toml`, rode:
 python tools\diagnostico.py --aplicar
 ```
 
-O comando grava `threads`, `hash_mb` e `high_priority = false`. Depois rode `3-verificar.bat` para conferir.
+O comando grava `threads`, `hash_mb` e `high_priority = false`. Depois rode `python tools\check_setup.py` para conferir.
 
 ---
 
@@ -186,7 +177,7 @@ O comando grava `threads`, `hash_mb` e `high_priority = false`. Depois rode `3-v
 |---|---|
 | **Operador** | Escuta o adversário e registra o lance. Depois **lê em voz alta o que ficou registrado**, para o árbitro e a outra equipe confirmarem. |
 | **Locutor** | Lê a frase do painel amarelo, devagar e claro. Só anuncia quando o painel estiver amarelo. |
-| **Conferente** | Depois de cada movimento do árbitro, confere se o tabuleiro físico bate com a tela. Vigia os dois relógios e sincroniza se a diferença passar de uns 10 segundos. |
+| **Conferente** | Depois de cada movimento da equipe, confere se o tabuleiro físico bate com a tela. Vigia os dois relógios e sincroniza se a diferença passar de uns 10 segundos. |
 
 **Anúncio sempre com peça, origem e destino.** "Bê", "dê", "ê" e "gê" se confundem no barulho. Com origem e destino, um erro de audição quase sempre vira lance ilegal, e o sistema recusa na hora.
 
@@ -231,14 +222,14 @@ Quando o sistema recusa, ele diz por quê:
 
 - [ ] Notebook na tomada, em modo de energia **Melhor desempenho**, com a suspensão em "Nunca" na tomada.
 - [ ] Programas pesados fechados: IDE, Docker, navegador com muitas abas.
-- [ ] Instalação feita, com `4-baixar-tablebases.bat` rodado.
+- [ ] Instalação feita. Tablebases, se forem usadas: `python tools\download_syzygy.py`.
 - [ ] Diagnóstico da seção 3 rodado e sugestão aplicada (`python tools\diagnostico.py --aplicar`).
 - [ ] Tabuleiro físico, relógio de xadrez (um app de relógio no celular serve; 25 minutos sem acréscimo) e um segundo celular com cronômetro.
 - [ ] Adversário de treino. O ideal é outro notebook rodando o mesmo sistema, como na sexta. Se não der, alguém tira os lances de um app de xadrez contra o motor.
 
 ### 6.2 Teste do fluxo (30 min)
 
-1. **Abra com `2-iniciar.bat`.** Escolha **Pretas**, clique em **Começar** e digite `e2e4`.
+1. **Abra com `python run.py`.** Escolha **Pretas**, clique em **Começar** e digite `e2e4`.
    - **Esperado:** "Registrado: Peão de e2 para e4", depois "Aguarde" por alguns segundos, depois o painel amarelo com o nosso lance.
 2. **Partida de 10 minutos para pegar o ritmo,** com os papéis da seção 5.
 3. **Lances especiais.** Em **Nova partida**, escolha **Pretas** e cole a posição no campo FEN:
@@ -261,7 +252,7 @@ Quando o sistema recusa, ele diz por quê:
 
 ### 6.3 Ensaio geral de 25 minutos (60 min)
 
-1. **Ative o modo avião** e rode `3-verificar.bat`. O aviso de internet tem que sumir.
+1. **Ative o modo avião** e rode `python tools\check_setup.py`. O aviso de internet tem que sumir.
 2. **Joguem uma partida completa, 25 minutos sem acréscimo**, exatamente como na sexta.
 3. **Meçam com o cronômetro, em uns 10 lances, e anotem a média:**
    - **A (entry_lag):** do adversário terminar o anúncio até o lance estar registrado;
@@ -269,7 +260,7 @@ Quando o sistema recusa, ele diz por quê:
 4. **Nos lances 20 e 40,** anotem os relógios da tela e os da mesa.
 5. **No meio da partida, ensaiem as falhas:**
    - **Motor morto:** Ctrl+Shift+Esc, encerre o `stockfish.exe`. O sistema tem que seguir sozinho e o contador "Reinícios" tem que subir para 1.
-   - **Programa fechado:** feche a janela preta e abra `2-iniciar.bat` de novo. Clique em **Retomar partida salva** e depois em **Sincronizar** com o tempo da mesa.
+   - **Programa fechado:** feche a janela preta e rode `python run.py` de novo. Clique em **Retomar partida salva** e depois em **Sincronizar** com o tempo da mesa.
 
 **Folha de medição:**
 
@@ -290,7 +281,7 @@ Quando o sistema recusa, ele diz por quê:
 1. **Abra o `config.toml` no Bloco de Notas** e troque `entry_lag_s` e `exec_lag_s` pelas médias A e B.
 2. **Se a máquina travou,** reduza `threads`, por exemplo para metade dos núcleos, e `hash_mb` (por exemplo `4096`). Depois rode `python tools\diagnostico.py` de novo.
 3. **Gere o livro de aberturas de madrugada.**
-   - Feche o sistema e dê dois cliques em `5-gerar-livro.bat`.
+   - Feche o sistema e rode `python tools\build_book.py --plies 12 --our-time 30 --their-time 8 --branch 3`.
    - Deixe o notebook na tomada, sem suspensão.
    - Pode levar várias horas. Se parar, rode de novo: ele continua de onde parou.
 
@@ -372,16 +363,16 @@ Aproveitem o mesmo e-mail, ou mandem outro para coordenacao.engsoftware@somosice
 ### Quinta à noite
 
 - [ ] `git pull` no notebook do torneio. A versão que vai rodar tem que ser a do repositório.
-- [ ] Rodar `6-diagnostico.bat` mais uma vez e conferir se não há ALERTA.
-- [ ] Rodar `3-verificar.bat`.
+- [ ] Rodar `python tools\diagnostico.py` mais uma vez e conferir se não há ALERTA.
+- [ ] Rodar `python tools\check_setup.py`.
 - [ ] Carregadores, mouse e cooler separados.
 
 ### Antes de sair de casa e antes de cada rodada
 
 - [ ] Notebook na tomada, em **Melhor desempenho**, com a suspensão desligada e o Windows Update pausado.
 - [ ] **Modo avião.**
-- [ ] Só o sistema aberto. Rodar `3-verificar.bat`: nenhuma FALHA e nenhum aviso de internet.
-- [ ] Abrir com `2-iniciar.bat`. Em **Nova partida**, escolher a cor e clicar em **Começar** junto com o relógio.
+- [ ] Só o sistema aberto. Rodar `python tools\check_setup.py`: nenhuma FALHA e nenhum aviso de internet.
+- [ ] Abrir com `python run.py`. Em **Nova partida**, escolher a cor e clicar em **Começar** junto com o relógio.
 
 ### Durante a partida
 
@@ -390,7 +381,7 @@ Aproveitem o mesmo e-mail, ou mandem outro para coordenacao.engsoftware@somosice
 - Se a tela mandar **reivindicar empate** ou disser o que fazer numa oferta de empate, repitam ao árbitro.
 - **Se algo der errado:**
   - lance errado: **Corrigir lance do adversário**;
-  - programa fechou: `2-iniciar.bat` e **Retomar partida salva**;
+  - programa fechou: `python run.py` e **Retomar partida salva**;
   - relógio diferente do da mesa: **Sincronizar**.
 
 ### Depois de cada partida
@@ -416,8 +407,8 @@ Aproveitem o mesmo e-mail, ou mandem outro para coordenacao.engsoftware@somosice
 |---|---|
 | "python não é reconhecido" | Reinstale o Python marcando "Add Python to PATH". Ou use `py` no lugar de `python`. |
 | "Could not open requirements file" | Você está na pasta errada. Entre na pasta que tem o `run.py`. |
-| "Motor não encontrado" | Falta o `engines\stockfish.exe`. Rode `1-instalar.bat` ou a instalação manual. |
-| O Windows bloqueia o `.bat` ou o `.exe` | Mais informações e depois Executar assim mesmo. |
+| "Motor não encontrado" | Falta o `engines\stockfish.exe`. Siga a instalação da seção 2.2. |
+| O Windows bloqueia o `.exe` | Mais informações e depois Executar assim mesmo. |
 | A máquina trava com RAM livre | Não passe de `threads = 12` nem ligue `high_priority`. Hash de 16384 MB cabe nos 40 GB. Feche e abra de novo. |
 | O navegador não abre | Abra <http://127.0.0.1:8765> manualmente. |
 | "Address already in use" | O sistema já está aberto em outra janela, ou a porta está ocupada. Feche a outra janela ou troque `port` no `config.toml`. |

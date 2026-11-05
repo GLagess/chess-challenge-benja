@@ -161,7 +161,7 @@ def main() -> int:
     cfg = load_config(args.config)
     engine_path = str(cfg.resolve(cfg.engine.path))
     if not Path(engine_path).is_file():
-        print(f"[ERRO] Motor não encontrado em {engine_path}. Rode antes o 1-instalar.bat.")
+        print(f"[ERRO] Motor não encontrado em {engine_path}. Coloque o Stockfish 19 em engines/stockfish.exe.")
         return 1
 
     logical = os.cpu_count() or 1

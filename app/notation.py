@@ -1,6 +1,6 @@
 """Entrada e saída de lances para os operadores.
 
-Formato do torneio: as equipes anunciam os lances em voz alta e o árbitro move as peças.
+Formato do torneio: as equipes anunciam os lances em voz alta e movem as peças no tabuleiro.
 
 O operador registra o lance do adversário de TRÊS formas, e só delas:
 

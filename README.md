@@ -1,6 +1,6 @@
 # Sistema da equipe — Chess Challenge III (iCEV 2026)
 
-Programa que decide os lances da equipe nas partidas presenciais do Chess Challenge III, no formato em que as equipes anunciam os lances em voz alta e o árbitro move as peças. Usa o **Stockfish 19** como motor de busca e acrescenta, por cima dele, uma camada própria de decisão:
+Programa que decide os lances da equipe nas partidas presenciais do Chess Challenge III. As equipes anunciam os lances em voz alta e movem as peças no tabuleiro físico. Usa o **Stockfish 19** como motor de busca e acrescenta, por cima dele, uma camada própria de decisão:
 
 - modelagem do adversário lance a lance;
 - seleção adaptativa de lances;
@@ -15,18 +15,15 @@ O sistema roda **100% offline**, como exige o edital: nenhuma API externa, nenhu
 O passo a passo completo para a equipe está em **`GUIA-DA-EQUIPE.md`**. O resumo:
 
 1. Instale o Python 3.11 ou mais novo, marcando "Add Python to PATH".
-2. Dê dois cliques em `1-instalar.bat`. Ele instala a dependência, baixa o Stockfish 19 para `engines/` e roda a verificação.
-3. Dê dois cliques em `4-baixar-tablebases.bat` (cerca de 1 GB).
-4. No notebook do torneio, dê dois cliques em `6-diagnostico.bat`. Ele mede a velocidade e o aquecimento e sugere threads e hash. Para gravar a sugestão: `python tools/diagnostico.py --aplicar`.
-5. Dê dois cliques em `2-iniciar.bat`. O navegador abre em <http://127.0.0.1:8765>.
-
-O mesmo pela linha de comando:
+2. Na pasta do projeto:
 
 ```
 pip install -r requirements.txt
 python tools/check_setup.py
 python run.py
 ```
+
+O navegador abre em <http://127.0.0.1:8765>. O Stockfish 19 não vai no Git: baixe o executável de Windows e coloque em `engines/stockfish.exe`, como explica `engines/LEIA-ME.txt`.
 
 O Stockfish 19 fica em `engines/stockfish.exe`. O download é <https://github.com/official-stockfish/Stockfish/releases/tag/sf_19>.
 
@@ -58,13 +55,13 @@ python tools/simulate.py --opponent fraco --games 2 --minutes 3
 
 ## Operação no dia (três pessoas)
 
-Formato confirmado pela organização: as equipes ficam frente a frente, com o tabuleiro entre elas. Cada equipe anuncia o próprio lance em voz alta, e o árbitro escuta e move as peças.
+Formato do edital: as equipes ficam frente a frente, com o tabuleiro entre elas. Cada equipe anuncia o próprio lance em voz alta e move as próprias peças.
 
 | Função | O que faz |
 |---|---|
 | Operador | Escuta o anúncio do adversário e registra no sistema de uma de três formas: origem e destino (`g8f6`, `e7e8d`), por extenso (`cavalo de g8 para f6`, `roque pequeno`) ou arrastando a peça no tabuleiro. Se o adversário anunciar o lance que o sistema previu, basta um clique em "Ele anunciou o previsto". Em seguida, lê em voz alta o que ficou registrado. |
 | Locutor | Anuncia o nosso lance lendo a frase em destaque, por exemplo "Cavalo de g1 para f3". |
-| Conferente | Depois de cada movimento do árbitro, confere se o tabuleiro físico bate com a tela. As linhas "Confira:" mostram o que deve acontecer em capturas, roques, en passant e promoções. Também vigia os dois relógios e sincroniza o sistema com o relógio da mesa. |
+| Conferente | Depois de cada movimento da equipe, confere se o tabuleiro físico bate com a tela. As linhas "Confira:" mostram o que deve acontecer em capturas, roques, en passant e promoções. Também vigia os dois relógios e sincroniza o sistema com o relógio da mesa. |
 
 **Protocolo de anúncio.** Sempre peça, casa de origem e casa de destino: "Cavalo de g1 para f3", "Peão de e4 captura em d5", "Roque pequeno", "Peão de e7 para e8, promove a dama".
 
