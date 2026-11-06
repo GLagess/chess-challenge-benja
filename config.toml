@@ -6,8 +6,8 @@ saves_dir = "saves"
 [engine]
 path = "engines/stockfish.exe"          # Stockfish 19 para Windows (stockfish-windows-x86-64-universal)
 fallback_path = "engines/stockfish-reserva.exe"  # cópia ou versão anterior; usada se a principal falhar
-threads = 12                            # i7-13650HX, medido aqui: 6=4.4 / 8=5.5 / 10=6.1 / 12=6.3 Mnós/s. 12 deixa 8 núcleos para o Windows.
-hash_mb = 16384                         # 16 GB dos 40. Aloca em ~4 s na abertura. A 4060 não entra nessa conta: o Stockfish é só CPU.
+threads = 6                             # Ryzen do notebook de hoje, 32 GB. 6 deixa CPU para o Windows. A 3050 não calcula.
+hash_mb = 8192                          # 8 GB dos 32. 16 GB nesse notebook troca memória e trava a tela.
 syzygy_path = "tablebases"              # tablebases de 3-4-5 peças (tools/download_syzygy.py)
 move_overhead_ms = 300
 high_priority = false                   # true rouba CPU da interface; deixe false
