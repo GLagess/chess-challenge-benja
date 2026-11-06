@@ -14,19 +14,18 @@ high_priority = false                   # true rouba CPU da interface; deixe fal
 ponder = true                           # pensar no tempo do adversário
 
 [clock]
-minutes = 25
+minutes = 10
 increment_s = 0
-# Meça no treino e ajuste. São os números que mais decidem partidas longas.
-entry_lag_s = 3.0      # do adversário mover a peça e apertar o relógio até registrarmos o lance
-exec_lag_s = 4.0       # do nosso lance aparecer até movermos a peça e apertarmos o relógio
-reserve_s = 60         # reserva intocável
-min_think_s = 0.5
-max_think_s = 25
-panic_s = 120          # abaixo disso: lances rápidos
-critical_s = 30        # abaixo disso: lances quase instantâneos
-moves_to_go_base = 75
-moves_to_go_slope = 0.5
-min_moves_to_go = 40
+entry_lag_s = 2.0      # do adversário mover a peça e apertar o relógio até registrarmos o lance
+exec_lag_s = 2.5       # do nosso lance aparecer até movermos a peça e apertarmos o relógio
+reserve_s = 25         # reserva intocável
+min_think_s = 0.25
+max_think_s = 6
+panic_s = 40           # abaixo disso: lances rápidos
+critical_s = 12        # abaixo disso: lances quase instantâneos
+moves_to_go_base = 35
+moves_to_go_slope = 0.35
+min_moves_to_go = 18
 
 [book]
 enabled = true

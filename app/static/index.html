@@ -244,8 +244,8 @@ dialog p { margin: 0 0 16px; color: var(--muted); }
     <div id="decision" class="decision" hidden></div>
 
     <div class="clocks">
-      <div class="clock" id="c-ours"><div class="who">Nosso relógio (estimado)</div><div class="t" id="t-ours">25:00</div></div>
-      <div class="clock" id="c-theirs"><div class="who">Adversário (estimado)</div><div class="t" id="t-theirs">25:00</div></div>
+      <div class="clock" id="c-ours"><div class="who">Nosso relógio (estimado)</div><div class="t" id="t-ours">10:00</div></div>
+      <div class="clock" id="c-theirs"><div class="who">Adversário (estimado)</div><div class="t" id="t-theirs">10:00</div></div>
     </div>
 
     <div class="actions">
@@ -297,7 +297,7 @@ dialog p { margin: 0 0 16px; color: var(--muted); }
     <button id="col-w" aria-pressed="true"><span class="pc w">♚&#xFE0E;</span>Brancas</button>
     <button id="col-b" aria-pressed="false"><span class="pc b">♚&#xFE0E;</span>Pretas</button>
   </div>
-  <div class="row"><label for="minutes">Minutos por jogador</label><input id="minutes" type="number" min="1" step="1" value="25"></div>
+  <div class="row"><label for="minutes">Minutos por jogador</label><input id="minutes" type="number" min="1" step="1" value="10"></div>
   <div class="row"><label for="fen">Posição inicial (FEN)</label><input id="fen" placeholder="opcional — só para retomar uma posição"></div>
   <div class="actions">
     <button id="b-start" class="primary">Começar</button>
@@ -668,7 +668,7 @@ function render(st) {
 
 function openSetup() {
   const st = S.st;
-  $("minutes").value = st ? st.default_minutes : 25;
+  $("minutes").value = st ? st.default_minutes : 10;
   $("b-resume").hidden = !(st && st.resume_available);
   $("resume-info").textContent = st && st.resume_available ? "Há uma partida salva: " + st.resume_info + "." : "";
   $("setup").showModal();
